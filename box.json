@@ -1,0 +1,12 @@
+{
+    "finder": [
+    {
+        "name": ["*.php"],
+        "in": ["src", "vendor"]
+    }
+    ],
+    "main": "bin/buse.php",
+    "output": "bin/buse.phar",
+    "chmod": "0755",
+    "stub": true
+}

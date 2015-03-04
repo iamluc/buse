@@ -1,0 +1,23 @@
+{
+    "name": "iamluc/buse",
+    "description": "Execute git command in several repositories",
+    "type": "library",
+    "require": {
+        "php": ">=5.4",
+        "symfony/console": "~2.6",
+        "symfony/finder": "~2.6",
+        "symfony/yaml": "~2.6",
+        "symfony/property-access": "~2.6",
+        "pimple/pimple": "~3.0",
+        "gitonomy/gitlib": "~0.1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.5"
+    },
+    "autoload": {
+        "psr-4": {
+          "Buse\\Tests\\": "tests/Buse/Tests",
+          "Buse\\": "src/Buse"
+        }
+    }
+}
