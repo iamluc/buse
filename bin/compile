@@ -19,15 +19,15 @@ foreach ($finder as $file) {
 }
 
 // Remove Shebang line
-$content = file_get_contents(__DIR__.'/buse.php');
+$content = file_get_contents(__DIR__.'/buse');
 $content = preg_replace('{^#!/usr/bin/env php\s*}', '', $content);
-$phar->addFromString('bin/buse.php', $content);
+$phar->addFromString('bin/buse', $content);
 
 $phar->setStub('#!/usr/bin/env php
 <?php
 
 Phar::mapPhar("buse.phar");
-require "phar://buse.phar/bin/buse.php";
+require "phar://buse.phar/bin/buse";
 
 __HALT_COMPILER();
 ');

@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "517a1dc4ec257406b1f2579151ab06e2",
+    "hash": "bdd99b8835879f68d4732ef7130e6ec4",
     "packages": [
         {
             "name": "gitonomy/gitlib",

@@ -2,12 +2,20 @@
     "name": "iamluc/buse",
     "description": "Execute git command in several repositories",
     "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Luc Vieillescazes",
+            "email": "luc@vieillescazes.net"
+        }
+    ],
     "require": {
         "php": ">=5.4",
         "symfony/console": "~2.6",
         "symfony/finder": "~2.6",
         "symfony/yaml": "~2.6",
         "symfony/property-access": "~2.6",
+        "symfony/process": "~2.6",
         "pimple/pimple": "~3.0",
         "gitonomy/gitlib": "~0.1.0"
     },
@@ -16,8 +24,16 @@
     },
     "autoload": {
         "psr-4": {
-          "Buse\\Tests\\": "tests/Buse/Tests",
           "Buse\\": "src/Buse"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Buse\\Tests\\": "tests/Buse/Tests"
+        }
+    },
+    "bin": ["bin/buse"],
+    "scripts": {
+        "test": "phpunit"
     }
 }

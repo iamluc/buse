@@ -20,7 +20,7 @@ Use
 ---
 
 ```sh
-bin/buse.php
+bin/buse
 
 # or if you have build the phar (see build section)
 bin/buse.phar
@@ -29,14 +29,14 @@ bin/buse.phar
 It should display the help message.
 To have description of a specific command, just type:
 ```
-$> bin/buse.php help the_command
+$> bin/buse help the_command
 ```
 
 All commands take as first argument an optional path.
 i.e.
 
 ```
-$> bin/buse.php status ../other/path
+$> bin/buse status ../other/path
 ```
 
 ## status
@@ -44,7 +44,7 @@ $> bin/buse.php status ../other/path
 Get status of your repositories
 
 ```
-$> bin/buse.php status ..
+$> bin/buse status ..
 buse: master                                                                                                                     
 repo2: master / not clean (1 staged, 3 modified)
 repo3: dev / not synchronized (1 ahead, 1 behind)
@@ -67,7 +67,7 @@ Push your repositories.
 Execute a git command in your repositories (do not specify 'git' in your command).
 
 ```
-$> bin/buse.php exec "log --pretty=oneline -1" ..
+$> bin/buse exec "log --pretty=oneline -1" ..
 buse:
 xxxxxxxxxxxx Last commit message buse
 
@@ -89,12 +89,13 @@ Get and set configuration.
 To exclude repositories, update your config typing:
 
 ```
-$> bin/buse.php config .. "repositories.exclude" "repo1,repo2"
+$> bin/buse config .. "repositories.exclude" "repo1,repo2"
 ```
 
 Build
 -----
 
 ```sh
-bin/compile.php
+composer install --no-dev
+bin/compile
 ```
