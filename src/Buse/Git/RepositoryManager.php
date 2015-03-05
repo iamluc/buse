@@ -17,6 +17,9 @@ class RepositoryManager
             ->ignoreDotFiles(false)
             ->ignoreVCS(false)
             ->in($path)
+            ->sort(function (\SplFileInfo $file1, \SplFileInfo $file2) {
+                return strnatcasecmp(basename($file1->getPath()), basename($file2->getPath()));
+            })
         ;
 
         $repositories = [];
