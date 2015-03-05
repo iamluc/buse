@@ -64,10 +64,14 @@ Push your repositories.
 
 ## exec
 
-Execute a git command in your repositories (do not specify 'git' in your command).
+Execute a git command in your repositories.
+
+Note:
+- 'git' must not be included in the command
+- you must write the command after '--'
 
 ```
-$> bin/buse exec "log --pretty=oneline -1" ..
+$> bin/buse exec .. -- log --pretty=oneline -1
 buse:
 xxxxxxxxxxxx Last commit message buse
 

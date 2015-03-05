@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 require __DIR__.'/../vendor/autoload.php';
 
 use Buse\Application;
+use Buse\Console\Input\RawArgvInput;
 
 $application = new Application();
-$application->run();
+$application->run(new RawArgvInput());
