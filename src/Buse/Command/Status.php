@@ -2,6 +2,8 @@
 
 namespace Buse\Command;
 
+use Gitonomy\Git\Commit;
+use Gitonomy\Git\Reference\Branch;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,7 +47,16 @@ class Status extends AbstractCommand
                 $tags = ['<info>', '</info>'];
             }
 
-            $status[$i] = sprintf('%1$s%3$s%2$s', $tags[0], $tags[1], $repo->getHead()->getName());
+            $head = $repo->getHead();
+            if ($head instanceof Branch) {
+                $name = $head->getName();
+            } elseif ($head instanceof Commit) {
+                $name = sprintf('detached (%s)', $head->getShortHash());
+            } else {
+                $name = 'empty';
+            }
+
+            $status[$i] = sprintf('%1$s%3$s%2$s', $tags[0], $tags[1], $name);
 
             if (!$state['clean']) {
                 $status[$i] .= sprintf(' / not clean (%d staged, %d modified)', $state['staged'], $state['working']);
