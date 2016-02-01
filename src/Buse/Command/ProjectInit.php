@@ -10,12 +10,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
-class ProjectImport extends AbstractCommand
+class ProjectInit extends AbstractCommand
 {
     protected function configure()
     {
         $this
-            ->setName('project:import')
+            ->setName('project:init')
             ->setDescription('Initialize project\'s repositories')
             ->addArgument(
                 'config',
