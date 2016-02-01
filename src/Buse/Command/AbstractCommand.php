@@ -96,11 +96,14 @@ class AbstractCommand extends Command implements ContainerAwareInterface
         }
     }
 
-    protected function getProcess(Repository $repo, $command, $args = array())
+    protected function getProcess($repo, $command, $args = array())
     {
-        $base = ['--git-dir', $repo->getGitDir()];
-        if ($repo->getWorkingDir()) {
-            $base = array_merge($base, ['--work-tree', $repo->getWorkingDir()]);
+        $base = [];
+        if ($repo instanceof Repository) {
+            $base = ['--git-dir', $repo->getGitDir()];
+            if ($repo->getWorkingDir()) {
+                $base = array_merge($base, ['--work-tree', $repo->getWorkingDir()]);
+            }
         }
 
         $builder = new ProcessBuilder(array_merge([$command], $base, $args));

@@ -2,6 +2,7 @@
 
 namespace Buse\Console;
 
+use Gitonomy\Git\Repository;
 use Symfony\Component\Console\Output\OutputInterface;
 use Buse\Console\Formatter\FormatterInterface;
 
@@ -30,12 +31,12 @@ class Canvas
         // Length of repository name column
         $length = 0;
         foreach ($repositories as $repo) {
-            $length = max($length, strlen(basename($repo->getWorkingDir())));
+            $length = max($length, strlen($this->getRepositoryName($repo)));
         }
 
         // Print
         foreach ($repositories as $i => $repo) {
-            $str = sprintf('<comment>%s</comment>: ', str_pad(basename($repo->getWorkingDir()), $length));
+            $str = sprintf('<comment>%s</comment>: ', str_pad($this->getRepositoryName($repo), $length));
 
             $formatter = isset($formatters[$i]) ? $formatters[$i] : '';
             if ($formatter instanceof FormatterInterface) {
@@ -44,5 +45,14 @@ class Canvas
 
             $this->output->writeln(str_pad(substr($str.$formatter, 0, $this->cols), $this->cols));
         }
+    }
+
+    protected function getRepositoryName($repo)
+    {
+        if ($repo instanceof Repository) {
+            return basename($repo->getWorkingDir());
+        }
+
+        return $repo;
     }
 }

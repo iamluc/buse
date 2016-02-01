@@ -46,6 +46,7 @@ class Application extends BaseApplication
         $commands[] = new Command\Pull();
         $commands[] = new Command\Push();
         $commands[] = new Command\Tag();
+        $commands[] = new Command\ProjectImport();
 
         return $commands;
     }
