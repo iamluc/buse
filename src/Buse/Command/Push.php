@@ -11,15 +11,11 @@ class Push extends AbstractCommand
 {
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('push')
             ->setDescription('Push your repositories')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path',
-                '.'
-            )
             ->addArgument(
                 'remote',
                 InputArgument::OPTIONAL,
@@ -38,7 +34,7 @@ class Push extends AbstractCommand
     {
         $this->handleInput($input);
 
-        $repositories = $this->findRepositories();
+        $repositories = $this->getRepositories();
 
         $args = ['push'];
         $ref = '';

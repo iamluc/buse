@@ -46,7 +46,7 @@ class Application extends BaseApplication
         $commands[] = new Command\Pull();
         $commands[] = new Command\Push();
         $commands[] = new Command\Tag();
-        $commands[] = new Command\ProjectInit();
+        $commands[] = new Command\CloneCommand();
 
         return $commands;
     }
@@ -64,7 +64,8 @@ class Application extends BaseApplication
         };
 
         $container['config_path'] = getcwd();
-        $container['config_filename'] = '.buse';
+        $container['config_filename'] = '.buse.yml';
+        $container['working_dir'] = getcwd();
 
         $container['config'] = function ($c) {
             return new Config($c['config_path'], $c['config_filename']);

@@ -12,15 +12,11 @@ class Pull extends AbstractCommand
 {
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('pull')
             ->setDescription('Pull your repositories')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path',
-                '.'
-            )
             ->addArgument(
                 'remote',
                 InputArgument::OPTIONAL,
@@ -50,7 +46,7 @@ class Pull extends AbstractCommand
     {
         $this->handleInput($input);
 
-        $repositories = $this->findRepositories();
+        $repositories = $this->getRepositories();
 
         $args = ['pull'];
         if ($input->getOption('rebase')) {

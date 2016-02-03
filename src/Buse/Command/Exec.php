@@ -3,7 +3,6 @@
 namespace Buse\Command;
 
 use Gitonomy\Git\Exception\ProcessException;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,18 +13,14 @@ class Exec extends AbstractCommand
 
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('exec')
             ->setDescription('Execute a git command in your repositories (do not specify `git` in your command)')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path',
-                '.'
-            )
             ->addOption(
                 'continue',
-                'c',
+                'e',
                 InputOption::VALUE_NONE,
                 'Continue on error'
             )
@@ -45,7 +40,7 @@ class Exec extends AbstractCommand
     {
         $this->handleInput($input);
 
-        $repositories = $this->findRepositories();
+        $repositories = $this->getRepositories();
 
         $continue = $input->getOption('continue');
 

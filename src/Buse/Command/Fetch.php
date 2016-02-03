@@ -11,15 +11,11 @@ class Fetch extends AbstractCommand
 {
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('fetch')
             ->setDescription('Fetch your repositories')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path',
-                '.'
-            )
             ->addArgument(
                 'remote',
                 InputArgument::OPTIONAL,
@@ -32,7 +28,7 @@ class Fetch extends AbstractCommand
     {
         $this->handleInput($input);
 
-        $repositories = $this->findRepositories();
+        $repositories = $this->getRepositories();
 
         $args = ['fetch'];
         if ($remote = $input->getArgument('remote')) {

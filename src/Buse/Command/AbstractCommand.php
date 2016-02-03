@@ -5,16 +5,47 @@ namespace Buse\Command;
 use Pimple\Container;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Process\ProcessBuilder;
 use Buse\ContainerAwareInterface;
 use Buse\Git\Repository;
 
 class AbstractCommand extends Command implements ContainerAwareInterface
 {
-    protected $container;
+    private $container;
 
-    protected $path;
-    protected $all;
+    private $groups = [];
+    private $noIgnore = false;
+
+    protected function configure()
+    {
+        $this
+            ->addOption(
+                'config',
+                'c',
+                InputOption::VALUE_REQUIRED,
+                'Path to the config file (".buse.yml")'
+            )
+            ->addOption(
+                'group',
+                'g',
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                'The group(s) to use'
+            )
+            ->addOption(
+                'working-dir',
+                'w',
+                InputOption::VALUE_REQUIRED,
+                'If specified, use the given directory as working directory.'
+            )
+            ->addOption(
+                'no-ignore',
+                null,
+                InputOption::VALUE_NONE,
+                'Select all repositories, even those in "global.ignore_repositories"'
+            )
+        ;
+    }
 
     public function setContainer(Container $container)
     {
@@ -30,33 +61,79 @@ class AbstractCommand extends Command implements ContainerAwareInterface
 
     public function handleInput(InputInterface $input)
     {
-        if ($input->hasArgument('path')) {
-            $path = $input->getArgument('path');
-            $this->path = realpath($path);
-            $this->container['config_path'] = $this->path;
-
-            if (!is_dir($this->path)) {
-                throw new \Exception(sprintf('Invalid path "%s".', $path));
+        if ($input->hasOption('working-dir') && $workingDir = $input->getOption('working-dir')) {
+            if (!is_dir($workingDir)) {
+                throw new \Exception(sprintf('Invalid working directory "%s".', $workingDir));
             }
+
+            $this->container['working_dir'] = realpath($workingDir);
         }
 
-        $this->all = $input->getOption('all');
+        if ($input->hasOption('config') && $config = $input->getOption('config')) {
+            if (!is_dir($config)) {
+                throw new \Exception(sprintf('Invalid config path "%s".', $config));
+            }
+
+            $this->container['config_path'] = realpath($config);
+        } else {
+            $this->container['config_path'] = $this->container['working_dir'];
+        }
+
+        if ($input->hasOption('group') && $groups = $input->getOption('group')) {
+            foreach ($groups as $group) {
+                if (false === $this->get('config')->hasGroup($group)) {
+                    throw new \RuntimeException(sprintf('Group "%s" does not exist', $group));
+                }
+            }
+
+            $this->groups = $groups;
+        }
+
+        $this->noIgnore = $input->getOption('no-ignore');
 
         return $this;
+    }
+
+    public function getRepositories()
+    {
+        if ($groups = $this->groups) {
+            return $this->getGroupsRepositories($groups);
+        }
+
+        return $this->findRepositories();
     }
 
     public function findRepositories()
     {
         $exclude = [];
-
-        if (!$this->all) {
-            $exclude = $this->get('config')->get('repositories.exclude');
-            if (!is_array($exclude)) {
-                $exclude = explode(',', $exclude);
+        if (!$this->noIgnore && $conf = $this->get('config')->get('global.ignore_repositories')) {
+            if (is_array($conf)) {
+                $exclude = $conf;
+            } else {
+                $exclude = explode(',', $conf);
             }
         }
 
-        return $this->get('repository_manager')->findRepositories($this->path, $exclude);
+        return $this->get('repository_manager')->findRepositories($this->get('working_dir'), $exclude);
+    }
+
+    public function getGroupsRepositories(array $groups)
+    {
+        $repositories = [];
+        $workingDir = $this->get('working_dir');
+        foreach ($groups as $group) {
+            $prefix = $this->get('config')->get($group.'.prefix');
+
+            $groupRepos = array_map(function ($name) use ($prefix, $workingDir) {
+                return $workingDir.'/'.$prefix.$name;
+            }, array_keys($this->get('config')->get($group.'.repositories')));
+
+            $repositories = array_merge($repositories, $groupRepos);
+        }
+
+        return array_map(function ($name) {
+            return new Repository($name);
+        }, $repositories);
     }
 
     public function display(array $repositories, array $formatters)
@@ -94,6 +171,8 @@ class AbstractCommand extends Command implements ContainerAwareInterface
                 sleep(1);
             }
         }
+
+        $this->get('canvas')->stop();
     }
 
     protected function getProcess($repo, $command, $args = array())

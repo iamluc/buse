@@ -4,7 +4,6 @@ namespace Buse\Command;
 
 use Gitonomy\Git\Commit;
 use Gitonomy\Git\Reference\Branch;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -12,15 +11,11 @@ class Status extends AbstractCommand
 {
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('status')
             ->setDescription('Get status of your repositories')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path',
-                '.'
-            )
         ;
     }
 
@@ -28,7 +23,7 @@ class Status extends AbstractCommand
     {
         $this->handleInput($input);
 
-        $repositories = $this->findRepositories();
+        $repositories = $this->getRepositories();
 
         $length = 0;
         foreach ($repositories as $repo) {

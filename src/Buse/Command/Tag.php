@@ -12,15 +12,11 @@ class Tag extends AbstractCommand
 {
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('tag')
             ->setDescription('Get and create tags')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path',
-                '.'
-            )
             ->addArgument(
                 'tagname',
                 InputArgument::OPTIONAL,
@@ -39,7 +35,7 @@ class Tag extends AbstractCommand
     {
         $this->handleInput($input);
 
-        $repositories = $this->findRepositories();
+        $repositories = $this->getRepositories();
 
         if ($tagName = $input->getArgument('tagname')) {
             $this->createTag($input, $repositories, $tagName);

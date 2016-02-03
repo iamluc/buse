@@ -20,6 +20,16 @@ class Canvas
         $this->started = false;
     }
 
+    public function stop()
+    {
+        $this->started = false;
+    }
+
+    public function writeln($messages)
+    {
+        $this->output->writeln($messages);
+    }
+
     public function display(array $repositories, array $formatters)
     {
         if ($this->started) {

@@ -11,14 +11,11 @@ class Config extends AbstractCommand
 {
     protected function configure()
     {
+        parent::configure();
+
         $this
             ->setName('config')
             ->setDescription('Get and set configuration')
-            ->addArgument(
-                'path',
-                InputArgument::OPTIONAL,
-                'Path'
-            )
             ->addArgument(
                 'option',
                 InputArgument::OPTIONAL,
@@ -42,9 +39,9 @@ class Config extends AbstractCommand
         if ($option && $value) {
             $this->get('config')->set($option, $value);
         } elseif ($option) {
-            $output->writeln(Yaml::dump($this->get('config')->get($option)));
+            $output->writeln(Yaml::dump($this->get('config')->get($option), 10));
         } else {
-            $output->writeln(Yaml::dump($this->get('config')->getConfig()));
+            $output->writeln(Yaml::dump($this->get('config')->getConfig(), 10));
         }
     }
 }

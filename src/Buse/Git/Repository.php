@@ -29,7 +29,7 @@ class Repository extends BaseRepository
             'working' => $working,
             'sync' => !$ahead && !$behind,
             'ahead' => $ahead,
-            'behind' => $behind
+            'behind' => $behind,
         ];
     }
 }
