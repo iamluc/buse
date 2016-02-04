@@ -12,7 +12,7 @@ use Buse\Git\RepositoryManager;
 
 class Application extends BaseApplication
 {
-    const VERSION = '0.0.1';
+    const VERSION = '0.0.2';
 
     public function __construct()
     {
