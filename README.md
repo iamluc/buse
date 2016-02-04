@@ -3,7 +3,7 @@ BUSE
 
 About
 -----
-buse helps managing and executing git command in several repositories at the same time.
+buse helps managing and executing git commands in several git repositories at the same time.
 
 buse is currently 'work in progress'. Command and arguments could change.
 
@@ -32,19 +32,12 @@ To have description of a specific command, just type:
 $> bin/buse help the_command
 ```
 
-All commands take as first argument an optional path.
-i.e.
-
-```
-$> bin/buse status ../other/path
-```
-
 ## status
 
 Get status of your repositories
 
 ```
-$> bin/buse status ..
+$> bin/buse status
 buse: master                                                                                                                     
 repo2: master / not clean (1 staged, 3 modified)
 repo3: dev / not synchronized (1 ahead, 1 behind)
@@ -71,7 +64,7 @@ Note:
 - you must write the command after '--'
 
 ```
-$> bin/buse exec .. -- log --pretty=oneline -1
+$> bin/buse exec -- log --pretty=oneline -1
 buse:
 xxxxxxxxxxxx Last commit message buse
 
@@ -86,6 +79,10 @@ xxxxxxxxxxxx Last commit message repo3
 
 Get and create tags.
 
+## clone
+
+Clone repositories. *This command needs a configuration file `.buse.yml`*
+
 ## config
 
 Get and set configuration.
@@ -93,8 +90,44 @@ Get and set configuration.
 To exclude repositories, update your config typing:
 
 ```
-$> bin/buse config .. "repositories.exclude" "repo1,repo2"
+$> bin/buse config "global.ignore_repositories" "repo1,repo2"
 ```
+
+Configuration
+-------------
+
+Buse will check if a file `.buse.yml` exists in the current directory.
+Note: You can use the `--config` (ie. `buse status --config ~/my-dir`) option to change the directory of the config file.
+
+A basic `.buse.yml` looks like:
+```yaml
+global:
+    ignore_repositories:
+        - workshop-serializer-todo
+        - twgit
+
+datatheke:
+    repositories:
+        datatheke: 'git@github.com:datatheke/datatheke.git'
+        datatheke-cli: 'git@github.com:datatheke/datatheke-cli.git'
+
+buse:
+    repositories:
+        buse: 'git@github.com:iamluc/buse.git'
+
+other:
+    repositories:
+        super-project: ~
+```
+
+The `global` section contains the global configuration of buse.
+
+Others sections are called "groups".
+
+If you call buse with the `--group` option (ie. `buse status --group datatheke --group buse`),
+the command will be executed only for the repositories defined in the selected groups.
+
+Without any `--group` option, buse will search all git repositories in the working directory.
 
 Build
 -----
