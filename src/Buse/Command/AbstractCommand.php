@@ -12,6 +12,8 @@ use Buse\Git\Repository;
 
 class AbstractCommand extends Command implements ContainerAwareInterface
 {
+    const MAX_PROCESSES = 10;
+
     private $container;
 
     private $groups = [];
@@ -143,10 +145,14 @@ class AbstractCommand extends Command implements ContainerAwareInterface
 
     protected function runProcesses(array $repositories, array $processes, array $formatters)
     {
+        $running = 0;
         while (count($processes) > 0) {
             foreach ($processes as $i => $process) {
                 if (!$process->isStarted()) {
-                    $process->start();
+                    if ($running < self::MAX_PROCESSES) {
+                        $running++;
+                        $process->start();
+                    }
 
                     continue;
                 }
@@ -161,6 +167,7 @@ class AbstractCommand extends Command implements ContainerAwareInterface
 
                 if (!$process->isRunning()) {
                     $formatters[$i]->finish($process->getExitCode());
+                    $running--;
                     unset($processes[$i]);
                 }
             }

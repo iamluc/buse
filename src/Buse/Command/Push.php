@@ -51,7 +51,7 @@ class Push extends AbstractCommand
         $formatters = [];
         $processes = [];
         foreach ($repositories as $repo) {
-            $formatters[] = new Spinner(sprintf('pushing %s...', $ref));
+            $formatters[] = new Spinner(sprintf('Waiting to push %s...', $ref));
             $processes[] = $this->getProcess($repo, 'git', $args);
         }
 

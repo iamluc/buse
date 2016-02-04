@@ -69,7 +69,7 @@ class Pull extends AbstractCommand
         $formatters = [];
         $processes = [];
         foreach ($repositories as $repo) {
-            $formatters[] = new Spinner(sprintf('pulling %s...', $ref));
+            $formatters[] = new Spinner(sprintf('Waiting to pull %s...', $ref));
             $processes[] = $this->getProcess($repo, 'git', $args);
         }
 

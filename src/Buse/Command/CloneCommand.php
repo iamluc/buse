@@ -42,7 +42,7 @@ class CloneCommand extends AbstractCommand
             $dir = $prefix.$dir;
 
             $repositories[] = $dir;
-            $formatters[] = new Spinner(sprintf('Cloning %s...', $url), 'Done');
+            $formatters[] = new Spinner(sprintf('Waiting to clone %s...', $url), 'Done');
             $processes[] = $this->getProcess($dir, 'git', ['clone', $url, $dir]);
         }
 

@@ -38,7 +38,7 @@ class Fetch extends AbstractCommand
         $formatters = [];
         $processes = [];
         foreach ($repositories as $repo) {
-            $formatters[] = new Spinner(sprintf('fetching %s...', $remote), 'Done');
+            $formatters[] = new Spinner(sprintf('Waiting to fetch %s...', $remote), 'Done');
             $processes[] = $this->getProcess($repo, 'git', $args);
         }
 

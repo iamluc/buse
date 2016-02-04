@@ -61,10 +61,10 @@ class Tag extends AbstractCommand
     protected function createTag(InputInterface $input, array $repositories, $tagName)
     {
         $args = ['tag'];
-        $message = 'tagging tag %s...';
+        $message = 'Waiting to tag %s...';
         if ($input->getOption('delete')) {
             $args[] = '--delete';
-            $message = 'deleting tag %s...';
+            $message = 'Waiting to delete tag %s...';
         }
         $args[] = $tagName;
 
