@@ -21,47 +21,47 @@ class Status extends AbstractCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->handleInput($input);
+        $groups = $this->getRepositories();
 
-        $repositories = $this->getRepositories();
-
-        $length = 0;
-        foreach ($repositories as $repo) {
-            $length = max($length, strlen(basename($repo->getWorkingDir())));
-        }
-
+        $repositories = [];
         $status = [];
-        foreach ($repositories as $i => $repo) {
-            $state = $repo->getStatus();
+        foreach ($groups as $group => $repos) {
+            foreach ($repos as $name => $repo) {
+                $key = count($groups) > 1 ? $group.'/'.$name : $name;
 
-            if (!$state['clean']) {
-                $tags = ['<fg=red>', '</fg=red>'];
-            } elseif (!$state['sync']) {
-                $tags = ['<fg=magenta>', '</fg=magenta>'];
-            } else {
-                $tags = ['<info>', '</info>'];
-            }
+                $state = $repo->getStatus();
 
-            $head = $repo->getHead();
-            if ($head instanceof Branch) {
-                $name = $head->getName();
-            } elseif ($head instanceof Commit) {
-                $name = sprintf('detached (%s)', $head->getShortHash());
-            } else {
-                $name = 'empty';
-            }
+                if (!$state['clean']) {
+                    $tags = ['<fg=red>', '</fg=red>'];
+                } elseif (!$state['sync']) {
+                    $tags = ['<fg=magenta>', '</fg=magenta>'];
+                } else {
+                    $tags = ['<info>', '</info>'];
+                }
 
-            $status[$i] = sprintf('%1$s%3$s%2$s', $tags[0], $tags[1], $name);
+                $head = $repo->getHead();
+                if ($head instanceof Branch) {
+                    $name = $head->getName();
+                } elseif ($head instanceof Commit) {
+                    $name = sprintf('detached (%s)', $head->getShortHash());
+                } else {
+                    $name = 'empty';
+                }
 
-            if (!$state['clean']) {
-                $status[$i] .= sprintf(' / not clean (%d staged, %d modified)', $state['staged'], $state['working']);
-            }
+                $status[$key] = sprintf('%1$s%3$s%2$s', $tags[0], $tags[1], $name);
 
-            if (!$state['sync']) {
-                $status[$i] .= sprintf(' / not synchronized (%d ahead, %d behind)', $state['ahead'], $state['behind']);
+                if (!$state['clean']) {
+                    $status[$key] .= sprintf(' / not clean (%d staged, %d modified)', $state['staged'], $state['working']);
+                }
+
+                if (!$state['sync']) {
+                    $status[$key] .= sprintf(' / not synchronized (%d ahead, %d behind)', $state['ahead'], $state['behind']);
+                }
+
+                $repositories[$key] = $repo;
             }
         }
 
-        $this->display($repositories, $status);
+        $this->display($repositories, $status, false);
     }
 }

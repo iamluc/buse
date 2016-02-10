@@ -2,7 +2,6 @@
 
 namespace Buse\Command;
 
-use Buse\Console\Formatter\Spinner;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -33,48 +32,46 @@ class Tag extends AbstractCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->handleInput($input);
-
-        $repositories = $this->getRepositories();
-
         if ($tagName = $input->getArgument('tagname')) {
-            $this->createTag($input, $repositories, $tagName);
+            $this->createOrRemoveTag($input, $tagName);
         } else {
-            $this->displayTags($repositories);
+            $this->displayTags($output);
         }
     }
 
-    protected function displayTags(array $repositories)
+    protected function displayTags(OutputInterface $output)
     {
-        $status = [];
-        foreach ($repositories as $i => $repo) {
-            $tags = [];
-            foreach ($repo->getReferences()->getTags() as $tag) {
-                $tags[] = $tag->getName();
+        $groups = $this->getRepositories();
+        foreach ($groups as $group => $repos) {
+            foreach ($repos as $name => $repo) {
+                $key = count($groups) > 1 ? $group.'/'.$name : $name;
+
+                $tags = [];
+                foreach ($repo->getReferences()->getTags() as $tag) {
+                    $tags[] = $tag->getName();
+                }
+                rsort($tags, SORT_NATURAL);
+
+                $output->write(sprintf('<comment>%s</comment> (%d): ', $key, count($tags)));
+                if ($tags) {
+                    $output->writeln(implode(', ', $tags));
+                } else {
+                    $output->writeln('<error>No tag found</error>');
+                }
             }
-            $status[$i] = implode(', ', $tags);
         }
-
-        $this->display($repositories, $status);
     }
 
-    protected function createTag(InputInterface $input, array $repositories, $tagName)
+    protected function createOrRemoveTag(InputInterface $input, $tagName)
     {
-        $args = ['tag'];
-        $message = 'Waiting to tag %s...';
+        $args = [];
+        $message = 'Waiting to tag...';
         if ($input->getOption('delete')) {
             $args[] = '--delete';
-            $message = 'Waiting to delete tag %s...';
+            $message = 'Waiting to delete tag...';
         }
         $args[] = $tagName;
 
-        $formatters = [];
-        $processes = [];
-        foreach ($repositories as $repo) {
-            $formatters[] = new Spinner(sprintf($message, $tagName));
-            $processes[] = $this->getProcess($repo, 'git', $args);
-        }
-
-        $this->runProcesses($repositories, $processes, $formatters);
+        $this->runGitCommand('tag', $args, $message);
     }
 }

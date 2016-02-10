@@ -4,8 +4,8 @@ namespace Buse\Command;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Buse\Console\Formatter\Spinner;
 
 class Fetch extends AbstractCommand
 {
@@ -21,27 +21,26 @@ class Fetch extends AbstractCommand
                 InputArgument::OPTIONAL,
                 'Remote'
             )
+            ->addOption(
+                'prune',
+                'p',
+                InputOption::VALUE_NONE,
+                'After fetching, remove any remote-tracking references that no longer exist on the remote'
+            )
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->handleInput($input);
-
-        $repositories = $this->getRepositories();
-
-        $args = ['fetch'];
+        $args = [];
         if ($remote = $input->getArgument('remote')) {
             $args[] = $remote;
         }
 
-        $formatters = [];
-        $processes = [];
-        foreach ($repositories as $repo) {
-            $formatters[] = new Spinner(sprintf('Waiting to fetch %s...', $remote), 'Done');
-            $processes[] = $this->getProcess($repo, 'git', $args);
+        if ($input->getOption('prune')) {
+            $args[] = '--prune';
         }
 
-        $this->runProcesses($repositories, $processes, $formatters);
+        $this->runGitCommand('fetch', $args, 'Waiting to fetch...');
     }
 }

@@ -31,8 +31,6 @@ class Config extends AbstractCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->handleInput($input);
-
         $option = $input->getArgument('option');
         $value = $input->getArgument('value');
 

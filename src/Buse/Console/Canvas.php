@@ -30,23 +30,27 @@ class Canvas
         $this->output->writeln($messages);
     }
 
-    public function display(array $repositories, array $formatters)
+    public function display(array $repositories, array $formatters, $dynamic = true)
     {
-        if ($this->started) {
-            $this->output->write(str_repeat("\033[1A", count($repositories)));
-        } else {
-            $this->started = true;
+        if ($dynamic) {
+            if ($this->started) {
+                $this->output->write(str_repeat("\033[1A", count($repositories)));
+            } else {
+                $this->started = true;
+            }
         }
 
         // Length of repository name column
         $length = 0;
-        foreach ($repositories as $repo) {
-            $length = max($length, strlen($this->getRepositoryName($repo)));
+        foreach ($repositories as $i => $repo) {
+            $name = is_numeric($i) ? $this->getRepositoryName($repo) : $i;
+            $length = max($length, strlen($name));
         }
 
         // Print
         foreach ($repositories as $i => $repo) {
-            $str = sprintf('<comment>%s</comment>: ', str_pad($this->getRepositoryName($repo), $length));
+            $name = is_numeric($i) ? $this->getRepositoryName($repo) : $i;
+            $str = sprintf('<comment>%s</comment>: ', str_pad($name, $length));
 
             $formatter = isset($formatters[$i]) ? $formatters[$i] : '';
             if ($formatter instanceof FormatterInterface) {

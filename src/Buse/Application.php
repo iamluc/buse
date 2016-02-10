@@ -2,7 +2,9 @@
 
 namespace Buse;
 
+use Buse\Process\ProcessManager;
 use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console\Command\Command as SfCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,28 +14,64 @@ use Buse\Git\RepositoryManager;
 
 class Application extends BaseApplication
 {
-    const VERSION = '0.0.2';
+    const VERSION = '0.0.3-dev';
 
     public function __construct()
     {
         parent::__construct('Buse', self::VERSION);
-
-        $this->getDefinition()->addOption(
-            new InputOption('all')
-        );
     }
 
-    public function doRun(InputInterface $input, OutputInterface $output)
+    protected function doRunCommand(SfCommand $command, InputInterface $input, OutputInterface $output)
     {
         $container = $this->createContainer($input, $output);
 
-        foreach ($this->all() as $command) {
-            if ($command instanceof ContainerAwareInterface) {
-                $command->setContainer($container);
-            }
+        if ($command instanceof ContainerAwareInterface) {
+            $command->setContainer($container);
         }
 
-        return parent::doRun($input, $output);
+        return parent::doRunCommand($command, $input, $output);
+    }
+
+    protected function getDefaultInputDefinition()
+    {
+        $definition = parent::getDefaultInputDefinition();
+
+        $definition->addOption(new InputOption(
+            'config',
+            'c',
+            InputOption::VALUE_REQUIRED,
+            'Path to the config file (".buse.yml")'
+        ));
+
+        $definition->addOption(new InputOption(
+            'working-dir',
+            'w',
+            InputOption::VALUE_REQUIRED,
+            'If specified, use the given directory as working directory.'
+        ));
+
+        $definition->addOption(new InputOption(
+            'group',
+            'g',
+            InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+            'The group(s) to use'
+        ));
+
+        $definition->addOption(new InputOption(
+            'no-ignore',
+            null,
+            InputOption::VALUE_NONE,
+            'Select all repositories, even those in "global.ignore_repositories"'
+        ));
+
+        $definition->addOption(new InputOption(
+            'no-group',
+            null,
+            InputOption::VALUE_NONE,
+            'Search repositories instead of using groups defined in the config file'
+        ));
+
+        return $definition;
     }
 
     protected function getDefaultCommands()
@@ -47,25 +85,32 @@ class Application extends BaseApplication
         $commands[] = new Command\Push();
         $commands[] = new Command\Tag();
         $commands[] = new Command\CloneCommand();
+        $commands[] = new Command\Git();
 
         return $commands;
     }
 
     protected function createContainer(InputInterface $input, OutputInterface $output)
     {
-        $container = new Container();
-
-        $container['repository_manager'] = function ($c) {
-            return new RepositoryManager();
-        };
+        $container = new Container([
+            'config_path' => getcwd(),
+            'config_filename' => '.buse.yml',
+            'working_dir' => getcwd(),
+            'groups' => [],
+            'no_ignore' => false,
+        ]);
 
         $container['canvas'] = function ($c) use ($output) {
             return new Canvas($output, $this->getTerminalWidth());
         };
 
-        $container['config_path'] = getcwd();
-        $container['config_filename'] = '.buse.yml';
-        $container['working_dir'] = getcwd();
+        $container['repository_manager'] = function ($c) {
+            return new RepositoryManager();
+        };
+
+        $container['process_manager'] = function ($c) {
+            return new ProcessManager($c['canvas']);
+        };
 
         $container['config'] = function ($c) {
             return new Config($c['config_path'], $c['config_filename']);

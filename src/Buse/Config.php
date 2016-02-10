@@ -15,7 +15,7 @@ class Config
     public function __construct($path, $filename)
     {
         $this->path = realpath($path).'/'.$filename;
-        $this->config = $this->readConfig($this->path);
+        $this->config = $this->readConfig();
         $this->accessor = PropertyAccess::createPropertyAccessor();
         $this->changed = false;
     }
@@ -33,9 +33,15 @@ class Config
         return $this;
     }
 
-    public function get($property)
+    public function get($property, $default = null)
     {
-        return $this->accessor->getValue($this->config, $this->toArrayProperty($property));
+        $value = $this->accessor->getValue($this->config, $this->toArrayProperty($property));
+
+        if (null === $value) {
+            return $default;
+        }
+
+        return $value;
     }
 
     public function getGroupsConfig(array $groups = null)
@@ -53,15 +59,25 @@ class Config
         }, ARRAY_FILTER_USE_KEY);
     }
 
+    public function getGroups()
+    {
+        return array_keys($this->getGroupsConfig());
+    }
+
     public function hasGroup($group)
     {
         return isset($this->config[$group]);
     }
 
-    private function readConfig($path)
+    public function hasConfigFile()
     {
-        if (file_exists($path)) {
-            return Yaml::parse(file_get_contents($path));
+        return file_exists($this->path);
+    }
+
+    private function readConfig()
+    {
+        if ($this->hasConfigFile()) {
+            return Yaml::parse(file_get_contents($this->path));
         }
 
         return [];

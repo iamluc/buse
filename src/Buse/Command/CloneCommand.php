@@ -20,35 +20,33 @@ class CloneCommand extends AbstractCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->handleInput($input);
-
-        $config = $this->get('config')->getGroupsConfig($input->getOption('group'));
-
-        if (!$config) {
+        if (!$groups = $this->get('config')->getGroupsConfig($input->getOption('group'))) {
             throw new \RuntimeException('No repositories found to clone.');
         }
 
-        foreach ($config as $group => $config) {
-            $this->cloneGroup($group, $config['repositories'], isset($config['prefix']) ? $config['prefix'] : null);
-        }
-    }
-
-    protected function cloneGroup($group, $repositoriesConfig, $prefix)
-    {
         $repositories = [];
         $formatters = [];
         $processes = [];
-        foreach ($repositoriesConfig as $dir => $url) {
-            $dir = $prefix.$dir;
+        foreach ($groups as $group => $config) {
+            if (!isset($config['repositories'])) {
+                continue;
+            }
+            $prefix = isset($config['prefix']) ? $config['prefix'] : null;
 
-            $repositories[] = $dir;
-            $formatters[] = new Spinner(sprintf('Waiting to clone %s...', $url), 'Done');
-            $processes[] = $this->getProcess($dir, 'git', ['clone', $url, $dir]);
+            foreach ($config['repositories'] as $name => $url) {
+                $key = count($groups) > 1 ? $group.'/'.$name : $name;
+                $dir = $prefix.$name;
+
+                $repositories[$key] = $dir;
+                if (null !== $url) {
+                    $formatters[$key] = new Spinner(sprintf('Waiting to clone %s...', $url), 'Done');
+                    $processes[$key] = $this->createGitProcess($dir, 'clone', [$url, $dir]);
+                } else {
+                    $formatters[$key] = 'Repository has no URL to clone';
+                }
+            }
         }
 
-        if ($repositories) {
-            $this->get('canvas')->writeln('<info>'.$group.'</info>');
-            $this->runProcesses($repositories, $processes, $formatters);
-        }
+        $this->runProcesses($repositories, $processes, $formatters);
     }
 }

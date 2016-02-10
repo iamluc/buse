@@ -30,7 +30,8 @@ class RepositoryManager
                 continue;
             }
 
-            $repositories[] = new Repository($workingDir);
+            $name = basename($workingDir);
+            $repositories[$name] = new Repository($workingDir);
         }
 
         return $repositories;

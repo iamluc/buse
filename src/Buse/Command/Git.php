@@ -2,12 +2,12 @@
 
 namespace Buse\Command;
 
-use Buse\Console\Formatter\Spinner;
+use Gitonomy\Git\Exception\ProcessException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Exec extends AbstractCommand
+class Git extends AbstractCommand
 {
     protected $synopsis;
 
@@ -16,8 +16,8 @@ class Exec extends AbstractCommand
         parent::configure();
 
         $this
-            ->setName('exec')
-            ->setDescription('Execute a command in your repositories')
+            ->setName('git')
+            ->setDescription('Execute a git command in your repositories (do not specify `git` in your command)')
             ->addOption(
                 'continue',
                 'e',
@@ -40,26 +40,31 @@ class Exec extends AbstractCommand
     {
         $groups = $this->getRepositories();
 
+        $continue = $input->getOption('continue');
+
         $args = $input->getRawArgs();
         if (!is_array($args) || 0 === count($args)) {
-            throw new \Exception('You must write the command after --. i.e. "buse exec -- log -1"');
+            throw new \Exception('You must write the command after --. i.e. "buse git -- log -1"');
         }
 
         $cmd = array_shift($args);
 
-        $repositories = [];
-        $formatters = [];
-        $processes = [];
         foreach ($groups as $group => $repos) {
             foreach ($repos as $name => $repo) {
-                $key = count($groups) > 1 ? $group.'/'.$name : $name;
+                $name = count($groups) > 1 ? $group.'/'.$name : $name;
+                $output->writeln(sprintf('<comment>%s</comment>: ', $name));
 
-                $formatters[$key] = new Spinner(sprintf('Waiting to execute "%s"...', $cmd), 'Done');
-                $processes[$key] = $this->createProcess($repo, $cmd, $args);
-                $repositories[$key] = $repo;
+                try {
+                    $res = $repo->run($cmd, $args);
+                    $output->writeln($res);
+                } catch (ProcessException $e) {
+                    if (!$continue) {
+                        throw $e;
+                    }
+
+                    $output->writeln($e->getErrorOutput());
+                }
             }
         }
-
-        $this->runProcesses($repositories, $processes, $formatters);
     }
 }

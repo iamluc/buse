@@ -55,7 +55,7 @@ Pull your repositories.
 
 Push your repositories.
 
-## exec
+## git
 
 Execute a git command in your repositories.
 
@@ -64,7 +64,7 @@ Note:
 - you must write the command after '--'
 
 ```
-$> bin/buse exec -- log --pretty=oneline -1
+$> bin/buse git -- log --pretty=oneline -1
 buse:
 xxxxxxxxxxxx Last commit message buse
 
@@ -73,6 +73,18 @@ xxxxxxxxxxxx Last commit message repo2
 
 repo3:
 xxxxxxxxxxxx Last commit message repo3
+```
+
+## exec
+
+Execute a command in your repositories.
+
+Note:
+- you must write the command after '--'
+
+```
+$> bin/buse exec -- composer install
+buse: | Loading composer repositories with package information
 ```
 
 ## tag
@@ -124,10 +136,15 @@ The `global` section contains the global configuration of buse.
 
 Others sections are called "groups".
 
-If you call buse with the `--group` option (ie. `buse status --group datatheke --group buse`),
+If there are "groups" defined in the config file, buse will execute the command for all repositories defined
+in groups.
+
+But if buse is called with the `--group` option (ie. `buse status --group datatheke --group buse`),
 the command will be executed only for the repositories defined in the selected groups.
 
-Without any `--group` option, buse will search all git repositories in the working directory.
+Without any "groups" found, buse will search for all git repositories in the working directory.
+
+Even with "groups" in the config file, you can force the search mode using the `--no-group` option.
 
 Build
 -----

@@ -2,66 +2,123 @@
 
 namespace Buse\Command;
 
+use Buse\Console\Formatter\Spinner;
 use Pimple\Container;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Console\Output\OutputInterface;
 use Buse\ContainerAwareInterface;
 use Buse\Git\Repository;
 
 class AbstractCommand extends Command implements ContainerAwareInterface
 {
-    const MAX_PROCESSES = 10;
-
     private $container;
-
-    private $groups = [];
-    private $noIgnore = false;
-
-    protected function configure()
-    {
-        $this
-            ->addOption(
-                'config',
-                'c',
-                InputOption::VALUE_REQUIRED,
-                'Path to the config file (".buse.yml")'
-            )
-            ->addOption(
-                'group',
-                'g',
-                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                'The group(s) to use'
-            )
-            ->addOption(
-                'working-dir',
-                'w',
-                InputOption::VALUE_REQUIRED,
-                'If specified, use the given directory as working directory.'
-            )
-            ->addOption(
-                'no-ignore',
-                null,
-                InputOption::VALUE_NONE,
-                'Select all repositories, even those in "global.ignore_repositories"'
-            )
-        ;
-    }
 
     public function setContainer(Container $container)
     {
         $this->container = $container;
-
-        return $this;
     }
 
-    public function get($id)
+    protected function get($id)
     {
         return $this->container[$id];
     }
 
-    public function handleInput(InputInterface $input)
+    protected function getRepositories()
+    {
+        if ($groups = $this->get('groups')) {
+            return $this->getGroupsRepositories($groups);
+        }
+
+        return $this->findRepositories();
+    }
+
+    protected function findRepositories()
+    {
+        $exclude = [];
+        if (!$this->get('no_ignore') && $conf = $this->get('config')->get('global.ignore_repositories')) {
+            if (is_array($conf)) {
+                $exclude = $conf;
+            } else {
+                $exclude = explode(',', $conf);
+            }
+        }
+
+        if (!$repositories = $this->get('repository_manager')->findRepositories($this->get('working_dir'), $exclude)) {
+            throw new \LogicException(sprintf('No repositories found in directory "%s"', $this->get('working_dir')));
+        }
+
+        return ['default' => $repositories];
+    }
+
+    protected function getGroupsRepositories(array $groups)
+    {
+        $repositories = [];
+        $workingDir = $this->get('working_dir');
+
+        $found = false;
+        foreach ($groups as $group) {
+            $config = $this->get('config')->get($group);
+            $prefix = isset($config['prefix']) ? $config['prefix'] : '';
+
+            if (!isset($config['repositories'])) {
+                continue;
+            }
+
+            foreach ($config['repositories'] as $name => $url) {
+                $found = true;
+                $repositories[$group][$name] = new Repository($workingDir.'/'.$prefix.$name);
+            }
+        }
+
+        if (!$found) {
+            throw new \LogicException(sprintf('No repositories found in group(s) "%s"', implode(', ', $groups)));
+        }
+
+        return $repositories;
+    }
+
+    protected function runGitCommand($command, $args, $message = 'Waiting to run command...')
+    {
+        $groups = $this->getRepositories();
+
+        $repositories = [];
+        $formatters = [];
+        $processes = [];
+        foreach ($groups as $group => $repos) {
+            foreach ($repos as $name => $repo) {
+                $key = count($groups) > 1 ? $group.'/'.$name : $name;
+
+                $repositories[$key] = $repo;
+                $formatters[$key] = new Spinner($message, 'Done');
+                $processes[$key] = $this->createGitProcess($repo, $command, $args);
+            }
+        }
+
+        $this->runProcesses($repositories, $processes, $formatters);
+    }
+
+    protected function display(array $repositories, array $formatters, $dynamic = true)
+    {
+        return $this->get('canvas')->display($repositories, $formatters, $dynamic);
+    }
+
+    protected function createProcess($repo, $command, $args = array())
+    {
+        return $this->get('process_manager')->createProcess($repo, $command, $args);
+    }
+
+    protected function createGitProcess($repo, $command, $args = array())
+    {
+        return $this->get('process_manager')->createGitProcess($repo, $command, $args);
+    }
+
+    protected function runProcesses(array $repositories, array $processes, array $formatters)
+    {
+        $this->get('process_manager')->runProcesses($repositories, $processes, $formatters);
+    }
+
+    protected function initialize(InputInterface $input, OutputInterface $output)
     {
         if ($input->hasOption('working-dir') && $workingDir = $input->getOption('working-dir')) {
             if (!is_dir($workingDir)) {
@@ -82,123 +139,28 @@ class AbstractCommand extends Command implements ContainerAwareInterface
         }
 
         if ($input->hasOption('group') && $groups = $input->getOption('group')) {
+            if ($input->getOption('no-group')) {
+                throw new \LogicException("Options --group and --no-group are mutually exlusive.");
+            }
+
+            $notFound = [];
             foreach ($groups as $group) {
                 if (false === $this->get('config')->hasGroup($group)) {
-                    throw new \RuntimeException(sprintf('Group "%s" does not exist', $group));
+                    $notFound[] = $group;
                 }
             }
 
-            $this->groups = $groups;
-        }
-
-        $this->noIgnore = $input->getOption('no-ignore');
-
-        return $this;
-    }
-
-    public function getRepositories()
-    {
-        if ($groups = $this->groups) {
-            return $this->getGroupsRepositories($groups);
-        }
-
-        return $this->findRepositories();
-    }
-
-    public function findRepositories()
-    {
-        $exclude = [];
-        if (!$this->noIgnore && $conf = $this->get('config')->get('global.ignore_repositories')) {
-            if (is_array($conf)) {
-                $exclude = $conf;
-            } else {
-                $exclude = explode(',', $conf);
-            }
-        }
-
-        return $this->get('repository_manager')->findRepositories($this->get('working_dir'), $exclude);
-    }
-
-    public function getGroupsRepositories(array $groups)
-    {
-        $repositories = [];
-        $workingDir = $this->get('working_dir');
-        foreach ($groups as $group) {
-            $prefix = $this->get('config')->get($group.'.prefix');
-
-            $groupRepos = array_map(function ($name) use ($prefix, $workingDir) {
-                return $workingDir.'/'.$prefix.$name;
-            }, array_keys($this->get('config')->get($group.'.repositories')));
-
-            $repositories = array_merge($repositories, $groupRepos);
-        }
-
-        return array_map(function ($name) {
-            return new Repository($name);
-        }, $repositories);
-    }
-
-    public function display(array $repositories, array $formatters)
-    {
-        return $this->get('canvas')->display($repositories, $formatters);
-    }
-
-    protected function runProcesses(array $repositories, array $processes, array $formatters)
-    {
-        $running = 0;
-        while (count($processes) > 0) {
-            foreach ($processes as $i => $process) {
-                if (!$process->isStarted()) {
-                    if ($running < self::MAX_PROCESSES) {
-                        $running++;
-                        $process->start();
-                    }
-
-                    continue;
-                }
-
-                $out = $process->getIncrementalOutput();
-                $error = $process->getIncrementalErrorOutput();
-
-                $out = $out ?: $error;
-                if ($out) {
-                    $formatters[$i]->setMessage($out);
-                }
-
-                if (!$process->isRunning()) {
-                    $formatters[$i]->finish($process->getExitCode());
-                    $running--;
-                    unset($processes[$i]);
-                }
+            if ($notFound) {
+                throw new \RuntimeException(sprintf('Unable to find group(s) "%s"', implode(', ', $notFound)));
             }
 
-            $this->display($repositories, $formatters);
-
-            if (count($processes)) {
-                sleep(1);
-            }
+            $this->container['groups'] = $groups;
         }
 
-        $this->get('canvas')->stop();
-    }
-
-    protected function getProcess($repo, $command, $args = array())
-    {
-        $base = [];
-        if ($repo instanceof Repository) {
-            $base = ['--git-dir', $repo->getGitDir()];
-            if ($repo->getWorkingDir()) {
-                $base = array_merge($base, ['--work-tree', $repo->getWorkingDir()]);
-            }
+        if (!$input->getOption('no-group') && !$this->container['groups'] && $groups = $this->get('config')->getGroups()) {
+            $this->container['groups'] = $groups;
         }
 
-        $builder = new ProcessBuilder(array_merge([$command], $base, $args));
-//        $builder->inheritEnvironmentVariables(false);
-        $process = $builder->getProcess();
-//        $process->setEnv($this->environmentVariables);
-//        $process->setTimeout($this->processTimeout);
-//        $process->setIdleTimeout($this->processTimeout);
-
-        return $process;
+        $this->container['no_ignore'] = $input->getOption('no-ignore');
     }
 }
